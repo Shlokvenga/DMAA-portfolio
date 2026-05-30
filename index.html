@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Factory Monitor — Shlok Vengurlekar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080c10;
+    --bg2: #0d1520;
+    --bg3: #111c2b;
+    --grid: rgba(30,80,140,0.12);
+    --blue: #1e7bff;
+    --blue-dim: #1457b8;
+    --cyan: #00d4ff;
+    --amber: #ffb830;
+    --green: #00e87a;
+    --red: #ff4444;
+    --text: #c8d8f0;
+    --text-dim: #5a7090;
+    --border: rgba(30,123,255,0.2);
+    --border-bright: rgba(30,123,255,0.5);
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+    --cond: 'Barlow Condensed', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── SCANLINE OVERLAY ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .wrap { position: relative; z-index: 2; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    height: 56px;
+    background: rgba(8,12,16,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--cyan);
+    letter-spacing: 0.08em;
+  }
+  .nav-logo span { color: var(--text-dim); }
+
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--cyan); }
+
+  .nav-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+  }
+  .pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(0,232,122,0.4); }
+    50% { opacity:0.7; box-shadow: 0 0 0 6px rgba(0,232,122,0); }
+  }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 100px 80px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-corner {
+    position: absolute;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+  .hero-corner.tl { top: 80px; left: 80px; }
+  .hero-corner.tr { top: 80px; right: 80px; text-align: right; }
+  .hero-corner.bl { bottom: 40px; left: 80px; }
+  .hero-corner.br { bottom: 40px; right: 80px; text-align: right; }
+
+  /* corner brackets */
+  .corner-bracket {
+    position: absolute;
+    width: 24px; height: 24px;
+  }
+  .corner-bracket.tl { top: 70px; left: 70px; border-top: 2px solid var(--blue); border-left: 2px solid var(--blue); }
+  .corner-bracket.tr { top: 70px; right: 70px; border-top: 2px solid var(--blue); border-right: 2px solid var(--blue); }
+  .corner-bracket.bl { bottom: 30px; left: 70px; border-bottom: 2px solid var(--blue); border-left: 2px solid var(--blue); }
+  .corner-bracket.br { bottom: 30px; right: 70px; border-bottom: 2px solid var(--blue); border-right: 2px solid var(--blue); }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .hero-title {
+    font-family: var(--cond);
+    font-weight: 900;
+    font-size: clamp(52px, 8vw, 110px);
+    line-height: 0.92;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 8px;
+    animation: fadeUp 0.8s 0.1s ease both;
+  }
+  .hero-title .line2 {
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgba(255,255,255,0.35);
+  }
+  .hero-title .accent { color: var(--blue); }
+
+  .hero-sub {
+    font-family: var(--cond);
+    font-weight: 400;
+    font-size: clamp(18px, 2.5vw, 28px);
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 24px;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  .hero-divider {
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, var(--blue), transparent);
+    margin: 32px 0;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+
+  .hero-desc {
+    max-width: 580px;
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+
+  .hero-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 36px;
+    animation: fadeUp 0.8s 0.5s ease both;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 14px;
+    border: 1px solid var(--border-bright);
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: rgba(30,123,255,0.07);
+    position: relative;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: background 0.2s;
+  }
+  .badge:hover { background: rgba(30,123,255,0.18); }
+
+  .hero-cta {
+    display: flex;
+    gap: 16px;
+    margin-top: 44px;
+    animation: fadeUp 0.8s 0.6s ease both;
+  }
+
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 14px 32px;
+    background: var(--blue);
+    color: #fff;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    transition: background 0.2s, transform 0.2s;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: #2d8fff; transform: translateY(-2px); }
+
+  .btn-ghost {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 14px 32px;
+    background: transparent;
+    color: var(--cyan);
+    text-decoration: none;
+    border: 1px solid var(--border-bright);
+    cursor: pointer;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    transition: background 0.2s, transform 0.2s;
+    display: inline-block;
+  }
+  .btn-ghost:hover { background: rgba(0,212,255,0.08); transform: translateY(-2px); }
+
+  /* big background text */
+  .hero-bg-text {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    font-family: var(--cond);
+    font-weight: 900;
+    font-size: clamp(100px, 18vw, 280px);
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(30,123,255,0.07);
+    text-transform: uppercase;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(24px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ── SECTION COMMON ── */
+  section {
+    padding: 100px 80px;
+    position: relative;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--blue);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::before {
+    content: '';
+    display: inline-block;
+    width: 32px; height: 1px;
+    background: var(--blue);
+  }
+
+  .section-title {
+    font-family: var(--cond);
+    font-weight: 900;
+    font-size: clamp(36px, 5vw, 64px);
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 48px;
+  }
+
+  /* ── ABOUT / STATS ROW ── */
+  #about {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+
+  .about-text p {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+  .about-text p strong { color: var(--text); font-weight: 600; }
+
+  .about-meta {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .meta-row {
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .meta-key { color: var(--text-dim); min-width: 100px; }
+  .meta-val { color: var(--cyan); }
+
+  .stats-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+  }
+  .stat-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .stat-block:hover { border-color: var(--border-bright); }
+  .stat-block::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--blue);
+  }
+  .stat-num {
+    font-family: var(--cond);
+    font-weight: 900;
+    font-size: 48px;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-num span { color: var(--blue); font-size: 28px; }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── ARCHITECTURE ── */
+  #architecture { background: var(--bg); }
+
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .arch-layer {
+    padding: 28px 20px;
+    border-right: 1px solid var(--border);
+    position: relative;
+    transition: background 0.3s;
+    cursor: default;
+  }
+  .arch-layer:last-child { border-right: none; }
+  .arch-layer:hover { background: rgba(30,123,255,0.06); }
+
+  .arch-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--blue);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .arch-name {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 18px;
+    color: #fff;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    letter-spacing: 0.03em;
+  }
+  .arch-tech {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    margin-bottom: 12px;
+  }
+  .arch-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .arch-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 40px 0;
+    position: relative;
+  }
+  .arch-connector::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+  }
+
+  /* ── SCHEMA ── */
+  #schema {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .schema-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .table-card {
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .table-card:hover { border-color: var(--blue); transform: translateY(-4px); }
+
+  .table-card-header {
+    background: rgba(30,123,255,0.12);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .table-card-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--cyan);
+    letter-spacing: 0.05em;
+  }
+  .table-card-type {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .table-card-body { padding: 16px 20px; }
+
+  .col-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .col-row:last-child { border-bottom: none; }
+  .col-name { color: var(--text); }
+  .col-name.pk { color: var(--amber); }
+  .col-name.fk { color: var(--blue); }
+  .col-type { color: var(--text-dim); font-size: 10px; }
+  .col-note { color: var(--green); font-size: 9px; }
+
+  .normalization-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 3px 10px;
+    background: rgba(0,232,122,0.1);
+    border: 1px solid rgba(0,232,122,0.3);
+    color: var(--green);
+    letter-spacing: 0.1em;
+    margin-top: 12px;
+  }
+
+  /* big span card */
+  .table-card.span2 { grid-column: span 2; }
+
+  /* ── SQL LAB ── */
+  #sql { background: var(--bg); }
+
+  .query-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .query-card {
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+    cursor: default;
+  }
+  .query-card:hover { border-color: var(--border-bright); }
+
+  .query-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--blue);
+    letter-spacing: 0.15em;
+    margin-bottom: 10px;
+  }
+  .query-title {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  .query-concepts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .concept-chip {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 3px 8px;
+    background: rgba(30,123,255,0.1);
+    border: 1px solid rgba(30,123,255,0.25);
+    color: var(--cyan);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .query-purpose {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* ── NOSQL ── */
+  #nosql {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ops-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .op-row {
+    display: grid;
+    grid-template-columns: 260px 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .op-row:hover { border-color: var(--border-bright); }
+
+  .op-code {
+    background: rgba(0,0,0,0.4);
+    padding: 16px 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    border-right: 1px solid var(--border);
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  .op-concept {
+    padding: 16px 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.05em;
+  }
+  .op-purpose {
+    padding: 16px 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    line-height: 1.5;
+  }
+
+  /* comparison table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 48px;
+    font-size: 13px;
+  }
+  .compare-table th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 14px 20px;
+    text-align: left;
+    border-bottom: 2px solid var(--blue);
+    color: var(--text-dim);
+  }
+  .compare-table th:nth-child(2) { color: var(--cyan); }
+  .compare-table th:nth-child(3) { color: var(--amber); }
+
+  .compare-table td {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text-dim);
+  }
+  .compare-table td:first-child {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+  .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── SIMULATION ── */
+  #simulation { background: var(--bg); }
+
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .sim-states {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .state-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .state-indicator {
+    width: 4px;
+    flex-shrink: 0;
+  }
+  .state-indicator.running { background: var(--green); }
+  .state-indicator.idle { background: var(--text-dim); }
+  .state-indicator.fault { background: var(--red); }
+
+  .state-content {
+    padding: 16px 20px;
+    flex: 1;
+  }
+  .state-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .state-name.running { color: var(--green); }
+  .state-name.idle { color: var(--text-dim); }
+  .state-name.fault { color: var(--red); }
+
+  .state-ranges {
+    display: flex;
+    gap: 24px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .state-ranges strong { color: var(--text); }
+
+  .alerts-panel {
+    border: 1px solid var(--border);
+  }
+  .alerts-header {
+    background: rgba(255,68,68,0.1);
+    border-bottom: 1px solid rgba(255,68,68,0.3);
+    padding: 12px 20px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .alert-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse-red 1.5s infinite; }
+  @keyframes pulse-red {
+    0%,100% { opacity:1; }
+    50% { opacity:0.3; }
+  }
+
+  .alert-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .alert-row:last-child { border-bottom: none; }
+  .alert-cond { color: var(--text); }
+  .alert-type { color: var(--amber); font-size: 10px; letter-spacing: 0.08em; }
+  .alert-action { color: var(--text-dim); font-size: 10px; }
+
+  /* ── OUTCOMES ── */
+  #outcomes {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .co-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .co-card {
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    padding: 24px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .co-card:hover { border-color: var(--blue); transform: translateY(-3px); }
+  .co-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--blue), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .co-card:hover::after { opacity: 1; }
+
+  .co-num {
+    font-family: var(--cond);
+    font-weight: 900;
+    font-size: 48px;
+    color: rgba(30,123,255,0.15);
+    line-height: 1;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .co-title {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+  .co-evidence {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--cyan);
+    line-height: 1.6;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── TEAM ── */
+  #team { background: var(--bg); }
+
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .team-card {
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    padding: 24px 20px;
+    transition: border-color 0.3s;
+  }
+  .team-card:hover { border-color: var(--border-bright); }
+
+  .team-usn {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--blue);
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .team-name {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 20px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .team-name.highlight { color: var(--cyan); }
+
+  .team-card.me {
+    border-color: var(--border-bright);
+    background: rgba(30,123,255,0.05);
+    position: relative;
+  }
+  .me-tag {
+    position: absolute;
+    top: 16px; right: 16px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+    border: 1px solid rgba(0,212,255,0.3);
+    padding: 2px 8px;
+    text-transform: uppercase;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 40px 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-left {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+  .footer-left strong { color: var(--cyan); }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+  }
+  .footer-links a {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--cyan); }
+
+  /* ── LIVE TICKER ── */
+  .ticker {
+    background: rgba(30,123,255,0.08);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+    overflow: hidden;
+    position: relative;
+  }
+  .ticker-track {
+    display: flex;
+    gap: 0;
+    animation: ticker 30s linear infinite;
+    white-space: nowrap;
+  }
+  .ticker-item {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    padding: 0 40px;
+    letter-spacing: 0.08em;
+  }
+  .ticker-item .val { color: var(--green); }
+  .ticker-item .warn { color: var(--amber); }
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1024px) {
+    #hero { padding: 100px 40px 60px; }
+    section { padding: 80px 40px; }
+    nav { padding: 0 24px; }
+    footer { padding: 32px 40px; }
+    .arch-grid { grid-template-columns: repeat(3, 1fr); }
+    .schema-grid { grid-template-columns: 1fr 1fr; }
+    .query-grid { grid-template-columns: 1fr 1fr; }
+    .co-grid { grid-template-columns: repeat(2, 1fr); }
+    .team-grid { grid-template-columns: repeat(2, 1fr); }
+    .about-grid { grid-template-columns: 1fr; gap: 40px; }
+    .sim-grid { grid-template-columns: 1fr; }
+    .op-row { grid-template-columns: 1fr; }
+    .op-concept, .op-code, .op-purpose { border-right: none; border-bottom: 1px solid var(--border); }
+    .op-purpose { border-bottom: none; }
+  }
+  @media (max-width: 640px) {
+    #hero { padding: 90px 24px 48px; }
+    section { padding: 60px 24px; }
+    nav { padding: 0 16px; }
+    footer { flex-direction: column; gap: 20px; padding: 24px; }
+    .nav-links { display: none; }
+    .arch-grid { grid-template-columns: 1fr; }
+    .schema-grid { grid-template-columns: 1fr; }
+    .query-grid { grid-template-columns: 1fr; }
+    .co-grid { grid-template-columns: 1fr; }
+    .team-grid { grid-template-columns: 1fr; }
+    .hero-corner { display: none; }
+    .corner-bracket { display: none; }
+    .table-card.span2 { grid-column: span 1; }
+    .stats-panel { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">DMAA<span>/</span>PORTFOLIO</div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#schema">Schema</a>
+    <a href="#sql">SQL Lab</a>
+    <a href="#nosql">NoSQL</a>
+    <a href="#outcomes">Outcomes</a>
+  </div>
+  <div class="nav-status">
+    <div class="pulse"></div>
+    SYSTEM LIVE
+  </div>
+</nav>
+
+<!-- LIVE TICKER -->
+<div style="margin-top:56px;" class="ticker">
+  <div class="ticker-track">
+    <span class="ticker-item">CNC LATHE ML-300 · TEMP <span class="val">72.4°C</span> · VIB <span class="val">2.31 m/s²</span> · STATUS <span class="val">RUNNING</span></span>
+    <span class="ticker-item">ROBOTIC ARM RA-500 · TEMP <span class="warn">88.1°C</span> · VIB <span class="warn">4.8 m/s²</span> · STATUS <span class="warn">FAULT</span></span>
+    <span class="ticker-item">CONVEYOR BELT CB-100 · TEMP <span class="val">41.2°C</span> · VIB <span class="val">0.2 m/s²</span> · STATUS <span class="val">IDLE</span></span>
+    <span class="ticker-item">WELDING ROBOT WR-200 · TEMP <span class="val">68.9°C</span> · VIB <span class="val">3.1 m/s²</span> · STATUS <span class="val">RUNNING</span></span>
+    <span class="ticker-item">HYDRAULIC PRESS HP-750 · TEMP <span class="val">55.3°C</span> · VIB <span class="val">1.8 m/s²</span> · STATUS <span class="val">RUNNING</span></span>
+    <span class="ticker-item">PACKAGING UNIT PU-400 · TEMP <span class="val">38.7°C</span> · VIB <span class="val">0.1 m/s²</span> · STATUS <span class="val">IDLE</span></span>
+    <!-- repeat for continuous scroll -->
+    <span class="ticker-item">CNC LATHE ML-300 · TEMP <span class="val">72.4°C</span> · VIB <span class="val">2.31 m/s²</span> · STATUS <span class="val">RUNNING</span></span>
+    <span class="ticker-item">ROBOTIC ARM RA-500 · TEMP <span class="warn">88.1°C</span> · VIB <span class="warn">4.8 m/s²</span> · STATUS <span class="warn">FAULT</span></span>
+    <span class="ticker-item">CONVEYOR BELT CB-100 · TEMP <span class="val">41.2°C</span> · VIB <span class="val">0.2 m/s²</span> · STATUS <span class="val">IDLE</span></span>
+    <span class="ticker-item">WELDING ROBOT WR-200 · TEMP <span class="val">68.9°C</span> · VIB <span class="val">3.1 m/s²</span> · STATUS <span class="val">RUNNING</span></span>
+    <span class="ticker-item">HYDRAULIC PRESS HP-750 · TEMP <span class="val">55.3°C</span> · VIB <span class="val">1.8 m/s²</span> · STATUS <span class="val">RUNNING</span></span>
+    <span class="ticker-item">PACKAGING UNIT PU-400 · TEMP <span class="val">38.7°C</span> · VIB <span class="val">0.1 m/s²</span> · STATUS <span class="val">IDLE</span></span>
+  </div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="corner-bracket tl"></div>
+  <div class="corner-bracket tr"></div>
+  <div class="corner-bracket bl"></div>
+  <div class="corner-bracket br"></div>
+
+  <div class="hero-corner tl">
+    DMAA OPEN-ENDED LAB PROJECT<br/>
+    ACADEMIC YEAR 2025–26 · SEM IV
+  </div>
+  <div class="hero-corner tr">
+    USN: 01FE24BAR002<br/>
+    DEPT. AUTOMATION &amp; ROBOTICS
+  </div>
+  <div class="hero-corner bl">COORD: 12.9716°N 77.5946°E</div>
+  <div class="hero-corner br">BUILD: REACT · SUPABASE · MONGODB</div>
+
+  <div class="hero-eyebrow">// shlok vengurlekar · portfolio project</div>
+
+  <div class="hero-title">
+    Smart<br/>
+    <span class="line2">Factory</span><br/>
+    <span class="accent">Monitor</span>
+  </div>
+
+  <div class="hero-sub">Machine &amp; Sensor Monitoring System · Dual-Database DBMS</div>
+
+  <div class="hero-divider"></div>
+
+  <p class="hero-desc">
+    A full-stack Industry 4.0 application that manages real-time sensor streams from 6 factory machines using a polyglot persistence architecture — PostgreSQL for structured entity data and MongoDB Atlas for high-velocity time-series logs.
+  </p>
+
+  <div class="hero-badges">
+    <span class="badge">PostgreSQL</span>
+    <span class="badge">MongoDB Atlas</span>
+    <span class="badge">React + Vite</span>
+    <span class="badge">TypeScript</span>
+    <span class="badge">Supabase</span>
+    <span class="badge">Edge Functions</span>
+    <span class="badge">3NF Schema</span>
+    <span class="badge">Polyglot Persistence</span>
+  </div>
+
+  <div class="hero-cta">
+    <a href="#architecture" class="btn-primary">Explore Project</a>
+    <a href="https://github.com/shlok-vengurlekar" class="btn-ghost" target="_blank">GitHub ↗</a>
+  </div>
+
+  <div class="hero-bg-text">FACTORY</div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-label">01 · About</div>
+  <div class="section-title">The Problem &amp;<br/>The Build</div>
+
+  <div class="about-grid">
+    <div class="about-text">
+      <p>Modern manufacturing facilities operate dozens of machines, each fitted with multiple sensors reporting <strong>temperature, vibration, pressure, proximity, and current</strong> values continuously. Managing this heterogeneous data efficiently is precisely the challenge this project addresses.</p>
+      <p>The system demonstrates how structured relational data (machine specs, operator assignments) and high-frequency, semi-structured time-series logs require two distinct database paradigms — a principle called <strong>polyglot persistence</strong>.</p>
+      <p>A real-time simulation engine writes to both databases every 5 seconds, generating statistically distinct sensor distributions for Running, Idle, and Fault machine states.</p>
+
+      <div class="about-meta">
+        <div class="meta-row"><span class="meta-key">COURSE</span><span class="meta-val">Data Management &amp; Analysis for Automation</span></div>
+        <div class="meta-row"><span class="meta-key">MENTOR</span><span class="meta-val">Mr. Vijaymahantesh K · Ms. Savitha M</span></div>
+        <div class="meta-row"><span class="meta-key">SEMESTER</span><span class="meta-val">Semester IV · Academic Year 2025–26</span></div>
+        <div class="meta-row"><span class="meta-key">DEPT</span><span class="meta-val">Automation &amp; Robotics · SET</span></div>
+      </div>
+    </div>
+
+    <div class="stats-panel">
+      <div class="stat-block">
+        <div class="stat-num">6<span>x</span></div>
+        <div class="stat-label">Factory Machines<br/>Monitored</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num">5<span>s</span></div>
+        <div class="stat-label">Dual-DB Write<br/>Cycle Interval</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num">9</div>
+        <div class="stat-label">SQL Queries<br/>Demonstrated</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num">72</div>
+        <div class="stat-label">MongoDB Docs<br/>Per Minute</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="section-label">02 · Architecture</div>
+  <div class="section-title">Three-Tier<br/>System Design</div>
+
+  <div class="arch-grid">
+    <div class="arch-layer">
+      <div class="arch-tag">Layer 01</div>
+      <div class="arch-name">Presentation</div>
+      <div class="arch-tech">React + Vite + TypeScript</div>
+      <div class="arch-desc">UI rendering, user interactions, live charts, Factory Floor grid, Analytics Dashboard</div>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-tag">Layer 02</div>
+      <div class="arch-name">Application</div>
+      <div class="arch-tech">Supabase SDK + Edge Functions</div>
+      <div class="arch-desc">Query routing, data access layer, MongoDB proxy via HTTP-to-driver translation</div>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-tag">Layer 03a</div>
+      <div class="arch-name">Relational Store</div>
+      <div class="arch-tech">PostgreSQL (Supabase)</div>
+      <div class="arch-desc">Structured entity data, ACID transactions, RLS policies, 3NF schema</div>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-tag">Layer 03b</div>
+      <div class="arch-name">Document Store</div>
+      <div class="arch-tech">MongoDB Atlas</div>
+      <div class="arch-desc">Time-series sensor logs, aggregation pipelines, schema-flexible documents</div>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-tag">Layer 04</div>
+      <div class="arch-name">Simulation</div>
+      <div class="arch-tech">TypeScript (client-side)</div>
+      <div class="arch-desc">setInterval 5s loop, stochastic sensor generation, concurrent dual-DB writes</div>
+    </div>
+  </div>
+</section>
+
+<!-- SCHEMA -->
+<section id="schema">
+  <div class="section-label">03 · Database Schema</div>
+  <div class="section-title">Relational Model<br/>— Third Normal Form</div>
+
+  <div class="schema-grid">
+    <div class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-name">machines</span>
+        <span class="table-card-type">Master Entity</span>
+      </div>
+      <div class="table-card-body">
+        <div class="col-row"><span class="col-name pk">id (PK)</span><span class="col-type">SERIAL</span><span class="col-note">PRIMARY</span></div>
+        <div class="col-row"><span class="col-name">machine_name</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">location</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span></div>
+        <div class="normalization-badge">3NF — No transitive deps</div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-name">operators</span>
+        <span class="table-card-type">Assignment</span>
+      </div>
+      <div class="table-card-body">
+        <div class="col-row"><span class="col-name pk">id (PK)</span><span class="col-type">SERIAL</span><span class="col-note">PRIMARY</span></div>
+        <div class="col-row"><span class="col-name">operator_name</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">experience</span><span class="col-type">INTEGER</span></div>
+        <div class="col-row"><span class="col-name fk">machine_id (FK)</span><span class="col-type">INT</span><span class="col-note">NULLABLE</span></div>
+        <div class="normalization-badge">Nullable FK → no redundancy</div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-name">sensors</span>
+        <span class="table-card-type">Catalogue</span>
+      </div>
+      <div class="table-card-body">
+        <div class="col-row"><span class="col-name pk">id (PK)</span><span class="col-type">SERIAL</span><span class="col-note">PRIMARY</span></div>
+        <div class="col-row"><span class="col-name">sensor_type</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">accuracy</span><span class="col-type">DECIMAL</span></div>
+        <div class="normalization-badge">1NF — No comma lists</div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-name">machine_sensor_map</span>
+        <span class="table-card-type">Junction — M:N Resolution</span>
+      </div>
+      <div class="table-card-body">
+        <div class="col-row"><span class="col-name pk">id (PK)</span><span class="col-type">SERIAL</span><span class="col-note">PRIMARY</span></div>
+        <div class="col-row"><span class="col-name fk">machine_id (FK)</span><span class="col-type">INT</span></div>
+        <div class="col-row"><span class="col-name fk">sensor_id (FK)</span><span class="col-type">INT</span></div>
+        <div class="col-row"><span class="col-name">install_date</span><span class="col-type">DATE</span></div>
+        <div class="normalization-badge">2NF — Junction resolves M:N</div>
+      </div>
+    </div>
+
+    <div class="table-card span2">
+      <div class="table-card-header">
+        <span class="table-card-name">machine_status</span>
+        <span class="table-card-type">Live State — Updated by Simulation Engine every 5s</span>
+      </div>
+      <div class="table-card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:0 40px;">
+        <div>
+          <div class="col-row"><span class="col-name pk">id (PK)</span><span class="col-type">SERIAL</span><span class="col-note">PRIMARY</span></div>
+          <div class="col-row"><span class="col-name fk">machine_id (FK)</span><span class="col-type">INT</span><span class="col-note">REF machines</span></div>
+          <div class="col-row"><span class="col-name">status</span><span class="col-type">VARCHAR</span><span class="col-note">Running/Idle/Fault</span></div>
+        </div>
+        <div>
+          <div class="col-row"><span class="col-name">temperature</span><span class="col-type">DECIMAL</span><span class="col-note">°C</span></div>
+          <div class="col-row"><span class="col-name">vibration</span><span class="col-type">DECIMAL</span><span class="col-note">m/s²</span></div>
+          <div class="col-row"><span class="col-name">last_updated</span><span class="col-type">TIMESTAMP</span></div>
+        </div>
+        <div style="grid-column:span 2;">
+          <div class="normalization-badge">UPSERT pattern — stores current reading only. Historical log → MongoDB</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SQL LAB -->
+<section id="sql">
+  <div class="section-label">04 · SQL Laboratory</div>
+  <div class="section-title">Nine Queries<br/>Full DML Spectrum</div>
+
+  <div class="query-grid">
+    <div class="query-card">
+      <div class="query-num">Q-01</div>
+      <div class="query-title">Full Machine Catalogue</div>
+      <div class="query-concepts">
+        <span class="concept-chip">SELECT</span>
+        <span class="concept-chip">ORDER BY</span>
+      </div>
+      <div class="query-purpose">Retrieve full machine catalogue in ID order</div>
+    </div>
+    <div class="query-card">
+      <div class="query-num">Q-02</div>
+      <div class="query-title">Machines with Operators</div>
+      <div class="query-concepts">
+        <span class="concept-chip">LEFT JOIN</span>
+        <span class="concept-chip">NULL handling</span>
+      </div>
+      <div class="query-purpose">Show all machines including those with no operator assigned</div>
+    </div>
+    <div class="query-card">
+      <div class="query-num">Q-03</div>
+      <div class="query-title">Live Status by Temperature</div>
+      <div class="query-concepts">
+        <span class="concept-chip">INNER JOIN</span>
+        <span class="concept-chip">ORDER BY DESC</span>
+      </div>
+      <div class="query-purpose">Live status overview sorted by hottest machines first</div>
+    </div>
+    <div class="query-card">
+      <div class="query-num">Q-04</div>
+      <div class="query-title">Sensor Count per Machine</div>
+      <div class="query-concepts">
+        <span class="concept-chip">JOIN</span>
+        <span class="concept-chip">GROUP BY</span>
+        <span class="concept-chip">COUNT</span>
+      </div>
+      <div class="query-purpose">How many sensors are monitoring each machine</div>
+    </div>
+    <div class="query-card">
+      <div class="query-num">Q-05</div>
+      <div class="query-title">Sensor Installation Manifest</div>
+      <div class="query-concepts">
+        <span class="concept-chip">3-Table JOIN</span>
+      </div>
+      <div class="query-purpose">Full sensor installation manifest for all machines</div>
+    </div>
+    <div class="query-card">
+      <div class="query-num">Q-06</div>
+      <div class="query-title">Overheating Machines</div>
+      <div class="query-concepts">
+        <span class="concept-chip">WHERE</span>
+        <span class="concept-chip">Range Filter</span>
+      </div>
+      <div class="query-purpose">Identify machines approaching overheating threshold (&gt;70°C)</div>
+    </div>
+    <div class="query-card">
+      <div class="query-num">Q-07</div>
+      <div class="query-title">Senior Operators</div>
+      <div class="query-concepts">
+        <span class="concept-chip">WHERE ≥</span>
+        <span class="concept-chip">ORDER BY</span>
+      </div>
+      <div class="query-purpose">List senior operators (≥5 years) eligible for critical machines</div>
+    </div>
+    <div class="query-card">
+      <div class="query-num">Q-08</div>
+      <div class="query-title">Thermal Profile by State</div>
+      <div class="query-concepts">
+        <span class="concept-chip">GROUP BY</span>
+        <span class="concept-chip">AVG</span>
+        <span class="concept-chip">MAX</span>
+      </div>
+      <div class="query-purpose">Aggregated thermal profile per operational state</div>
+    </div>
+    <div class="query-card">
+      <div class="query-num">Q-09</div>
+      <div class="query-title">Full Factory Report</div>
+      <div class="query-concepts">
+        <span class="concept-chip">5-Table JOIN</span>
+        <span class="concept-chip">STRING_AGG</span>
+      </div>
+      <div class="query-purpose">Complete factory allocation report in a single declarative query</div>
+    </div>
+  </div>
+</section>
+
+<!-- NOSQL -->
+<section id="nosql">
+  <div class="section-label">05 · NoSQL Laboratory</div>
+  <div class="section-title">MongoDB Operations<br/>&amp; Aggregation Pipelines</div>
+
+  <div class="ops-list">
+    <div class="op-row">
+      <div class="op-code">find().sort('timestamp',-1).limit(20)</div>
+      <div class="op-concept">Basic Read · Sort · Limit</div>
+      <div class="op-purpose">Retrieve most recent 20 sensor readings for live dashboard feed</div>
+    </div>
+    <div class="op-row">
+      <div class="op-code">find({ $or: [{ temperature:{$gt:80} }, { vibration:{$gt:4} }] })</div>
+      <div class="op-concept">$or Operator · Conditional Query</div>
+      <div class="op-purpose">Anomaly detection — flag readings exceeding safety thresholds</div>
+    </div>
+    <div class="op-row">
+      <div class="op-code">find({ status: 'Fault' })</div>
+      <div class="op-concept">Equality Filter</div>
+      <div class="op-purpose">Isolate all log entries recorded during a fault state</div>
+    </div>
+    <div class="op-row">
+      <div class="op-code">aggregate([$group:{_id:'$machineId', avgTemp:{$avg:'$temperature'}, maxVib:{$max:'$vibration'}}])</div>
+      <div class="op-concept">$group · $avg · $max Pipeline</div>
+      <div class="op-purpose">Per-machine performance statistics for dashboard KPIs</div>
+    </div>
+    <div class="op-row">
+      <div class="op-code">aggregate([$group:{_id:'$status', count:{$sum:1}}])</div>
+      <div class="op-concept">Count Aggregation · $sum</div>
+      <div class="op-purpose">Status distribution for pie-chart visualisation</div>
+    </div>
+    <div class="op-row">
+      <div class="op-code">deleteMany({ timestamp: { $lt: cutoffTime } })</div>
+      <div class="op-concept">Conditional Delete · TTL Pattern</div>
+      <div class="op-purpose">Log pruning — remove entries older than 1 hour to manage collection size</div>
+    </div>
+  </div>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th>PostgreSQL (Relational)</th>
+        <th>MongoDB (Document)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Data Structure</td><td>Fixed schema, typed columns</td><td>Flexible JSON documents</td></tr>
+      <tr><td>Relationships</td><td>Foreign keys, JOINs</td><td>Embedded / denormalised</td></tr>
+      <tr><td>Query Language</td><td>SQL (declarative)</td><td>MQL + Aggregation Pipeline</td></tr>
+      <tr><td>Strengths</td><td>ACID, complex joins, constraints</td><td>High write throughput, schema flexibility</td></tr>
+      <tr><td>Used for (project)</td><td>Machines, operators, sensors</td><td>Real-time sensor log stream</td></tr>
+      <tr><td>Update pattern</td><td>UPDATE (overwrite current row)</td><td>INSERT (append new document)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SIMULATION -->
+<section id="simulation">
+  <div class="section-label">06 · Simulation Engine</div>
+  <div class="section-title">Real-Time<br/>Data Flow</div>
+
+  <div class="sim-grid">
+    <div class="sim-states">
+      <div class="state-row">
+        <div class="state-indicator running"></div>
+        <div class="state-content">
+          <div class="state-name running">Running</div>
+          <div class="state-ranges">
+            <span>TEMP <strong>55–95°C</strong></span>
+            <span>VIB <strong>1.0–3.5 m/s²</strong></span>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:6px;">Normal production operation</div>
+        </div>
+      </div>
+      <div class="state-row">
+        <div class="state-indicator idle"></div>
+        <div class="state-content">
+          <div class="state-name idle">Idle</div>
+          <div class="state-ranges">
+            <span>TEMP <strong>30–50°C</strong></span>
+            <span>VIB <strong>0.0–0.5 m/s²</strong></span>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:6px;">Machine powered but not processing</div>
+        </div>
+      </div>
+      <div class="state-row">
+        <div class="state-indicator fault"></div>
+        <div class="state-content">
+          <div class="state-name fault">Fault</div>
+          <div class="state-ranges">
+            <span>TEMP <strong>82–100°C</strong></span>
+            <span>VIB <strong>4.5–7.5 m/s²</strong></span>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:6px;">Critical state — triggers immediate alerts</div>
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--border);padding:20px;margin-top:8px;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:0.1em;margin-bottom:12px;">DUAL-WRITE PER CYCLE</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);line-height:1.8;">
+          PostgreSQL → UPDATE machine_status<br/>
+          MongoDB → INSERT sensor_logs<br/>
+          <span style="color:var(--text-dim)">// concurrent · every 5 seconds</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="alerts-panel">
+      <div class="alerts-header">
+        <div class="alert-dot"></div>
+        Active Alert Logic
+      </div>
+      <div class="alert-row">
+        <div>
+          <div class="alert-cond">Temperature &gt; 85°C</div>
+          <div class="alert-type">Overheating Alert</div>
+        </div>
+        <div class="alert-action">Immediate operator notification</div>
+      </div>
+      <div class="alert-row">
+        <div>
+          <div class="alert-cond">Vibration &gt; 5.0 m/s²</div>
+          <div class="alert-type">Severe Vibration Warning</div>
+        </div>
+        <div class="alert-action">Potential bearing failure</div>
+      </div>
+      <div class="alert-row">
+        <div>
+          <div class="alert-cond">Temperature &gt; 75°C</div>
+          <div class="alert-type">High Temperature Warning</div>
+        </div>
+        <div class="alert-action">Approaching thermal limit</div>
+      </div>
+      <div class="alert-row">
+        <div>
+          <div class="alert-cond">Vibration &gt; 3.5 m/s²</div>
+          <div class="alert-type">Maintenance Warning</div>
+        </div>
+        <div class="alert-action">Schedule preventive maintenance</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COURSE OUTCOMES -->
+<section id="outcomes">
+  <div class="section-label">07 · Course Outcomes</div>
+  <div class="section-title">DMAA Outcomes<br/>Mapping</div>
+
+  <div class="co-grid">
+    <div class="co-card">
+      <div class="co-num">CO1</div>
+      <div class="co-title">Relational Data Models</div>
+      <div class="co-evidence">5-table PostgreSQL schema · ER analysis · normalisation to 3NF</div>
+    </div>
+    <div class="co-card">
+      <div class="co-num">CO2</div>
+      <div class="co-title">SQL DML &amp; DDL</div>
+      <div class="co-evidence">9 queries · SELECT · JOIN · GROUP BY · WHERE · aggregates · DDL migrations</div>
+    </div>
+    <div class="co-card">
+      <div class="co-num">CO3</div>
+      <div class="co-title">NoSQL Paradigms</div>
+      <div class="co-evidence">MongoDB sensor_logs · document schema design · relational comparison</div>
+    </div>
+    <div class="co-card">
+      <div class="co-num">CO4</div>
+      <div class="co-title">Aggregation &amp; Analytics</div>
+      <div class="co-evidence">SQL AVG/MAX/COUNT · MongoDB $group pipelines · alert derivation</div>
+    </div>
+    <div class="co-card">
+      <div class="co-num">CO5</div>
+      <div class="co-title">Real-Time Systems</div>
+      <div class="co-evidence">5s dual-DB write engine · real-time alert logic · live dashboard KPIs</div>
+    </div>
+    <div class="co-card">
+      <div class="co-num">CO6</div>
+      <div class="co-title">Polyglot Persistence</div>
+      <div class="co-evidence">PostgreSQL for structured entities · MongoDB for high-velocity time-series</div>
+    </div>
+    <div class="co-card">
+      <div class="co-num">CO7</div>
+      <div class="co-title">Data Integrity</div>
+      <div class="co-evidence">Foreign keys · RLS policies on all tables · nullable FK for unassigned operators</div>
+    </div>
+    <div class="co-card" style="border-color:var(--border-bright);background:rgba(30,123,255,0.04);">
+      <div class="co-num" style="color:rgba(0,212,255,0.25);">+</div>
+      <div class="co-title">Future Work</div>
+      <div class="co-evidence">Predictive maintenance via time-series ML · Role-based access control via PostgreSQL RLS</div>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="section-label">08 · Team</div>
+  <div class="section-title">Project<br/>Members</div>
+
+  <div class="team-grid">
+    <div class="team-card me">
+      <div class="me-tag">You are here</div>
+      <div class="team-usn">01FE24BAR002</div>
+      <div class="team-name highlight">Shlok<br/>Vengurlekar</div>
+    </div>
+    <div class="team-card">
+      <div class="team-usn">01FE24BAR003</div>
+      <div class="team-name">Pavanashree<br/>K</div>
+    </div>
+    <div class="team-card">
+      <div class="team-usn">01FE24BAR022</div>
+      <div class="team-name">Godwin<br/>Anthony</div>
+    </div>
+    <div class="team-card">
+      <div class="team-usn">01FE24BAR027</div>
+      <div class="team-name">Chidanand<br/>S K</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <strong>Shlok Vengurlekar</strong> · USN 01FE24BAR002<br/>
+    Dept. Automation &amp; Robotics · School of Engineering &amp; Technology<br/>
+    DMAA Open-Ended Lab Project · Academic Year 2025–26
+  </div>
+  <div class="footer-links">
+    <a href="#hero">Back to Top</a>
+    <a href="https://github.com/shlokvenga" target="_blank">GitHub</a>
+    <a href="mailto:shlok@vengurlekar.co.in">Contact</a>
+  </div>
+</footer>
+
+</div><!-- .wrap -->
+
+<script>
+  // Intersection Observer for scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.query-card, .table-card, .co-card, .team-card, .arch-layer, .op-row, .state-row').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease, border-color 0.3s';
+    observer.observe(el);
+  });
+
+  // Live ticker data simulation
+  function randomInRange(min, max) {
+    return (Math.random() * (max - min) + min).toFixed(1);
+  }
+
+  // Smooth nav active state
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.style.color = a.getAttribute('href') === '#' + current
+        ? 'var(--cyan)'
+        : 'var(--text-dim)';
+    });
+  });
+</script>
+</body>
+</html>
